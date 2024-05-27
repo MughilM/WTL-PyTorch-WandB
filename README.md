@@ -1,4 +1,4 @@
-# WTL-PyTorch
+# WTL-PyTorch-WandB
 This repository supports the paper by me, Samrat Halder, Yuval Marton, and Asad Sayeed, titled 
 *Where's the Learning in Representation Learning for Compositional Semantics and the Case of Thematic Fit*
 ([arXiv](https://arxiv.org/abs/2208.04749)).
