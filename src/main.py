@@ -27,6 +27,7 @@ from omegaconf import DictConfig, OmegaConf
 import torch
 import pytorch_lightning as pl
 from pytorch_lightning import LightningModule, LightningDataModule, Trainer
+from pytorch_lightning.loggers import WandbLogger
 
 
 torch.set_float32_matmul_precision('medium')
@@ -41,6 +42,28 @@ def train(cfg: DictConfig) -> None:
     # Create the data directory in case it's missing
     os.makedirs(cfg.paths.data_dir, exist_ok=True)
 
+    if cfg.get('wandb_enabled'):
+        wandb_logger = WandbLogger(project=cfg.datamodule.comp_name, save_dir=cfg.paths.log_dir)
+    else:
+        wandb_logger = WandbLogger(project=cfg.datamodule.comp_name, save_dir=cfg.paths.log_dir, mode='disabled')
+
+    log.info(f'Instantiating datamodule <{cfg.datamodule._target_}>...')
+    datamodule: LightningDataModule = hydra.utils.instantiate(cfg.datamodule)
+    datamodule.prepare_data()
+
+    # log.info(f'Instantiating model <{cfg.model._target_}>...')
+    # model: LightningModule = hydra.utils.instantiate(cfg.model)
+
+    # log.info('Instantiating callbacks...')
+    # if cfg.get('callbacks'):
+    #     callbacks = instantiate_callbacks(cfg.get('callbacks'))
+
+    # log.info(f'Instantiating Trainer...')
+    # trainer: Trainer = hydra.utils.instantiate(cfg.trainer, logger=wandb_logger, callbacks=callbacks)
+    #
+    # log.info('Starting training...')
+    # trainer.fit(model=model, datamodule=datamodule, ckpt_path=cfg.get('ckpt_path'))
+
 
 @hydra.main(version_base='1.3', config_path='../config', config_name='train.yaml')
 def main(cfg: DictConfig) -> None:
@@ -49,7 +72,7 @@ def main(cfg: DictConfig) -> None:
 
 
 if __name__ == '__main__':
-    logger = logging.getLogger('train')
+    log = logging.getLogger('main')
     main()
 
 

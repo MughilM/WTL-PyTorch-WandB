@@ -4,7 +4,7 @@ formatters:
     format: '%(asctime)s - %(name)s(%(funcName)s) - %(levelname)s || %(message)s'
 handlers:
   console:
-    class: utils.color_logging.ColorHandler
+    class: utils.ColorHandler
     formatter: simple
     stream: ext://sys.stdout
     level: DEBUG
