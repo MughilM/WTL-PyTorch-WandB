@@ -161,3 +161,6 @@ cython_debug/
 
 !data/corpus_files.csv
 data/*
+
+# A local sandbox folder, ignore everything in it
+sandbox/
