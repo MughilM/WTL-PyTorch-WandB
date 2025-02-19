@@ -60,13 +60,36 @@ class WordRoleDataModule(LightningDataModule):
         :return:
         """
         # First, we have to generate the list of train files.
-        # We are given a fraction and the set in stone list of
-        # validation and testing. Remove these from the corpus dataframe,
-        # and sample it afterwards...
-        train_universe = self.corpus.drop(index=self.hparams.val_files + self.hparams.test_files)
-        self.train_files = train_universe.sample(frac=self.hparams.train_frac).index.tolist()
-        log.info(f'Train fraction - {int(self.hparams.train_frac * 100)}% = {len(self.train_files)} training files')
-        log.info(f'Train files - {self.train_files}')
+        # We are given a fraction of how many we need. This is taken from the
+        # list of all files AFTER the validation and test files have been removed.
+        # To keep it consistent with the previous version, we use a stratified sample.
+        # The stratification is rounded from the provided fraction, and we select the FIRST
+        # non-validation and non-test file, and return to normal gap e.g. if we are choosing every 10 files,
+        # and file #11 and file #12 are part of validation and testing, then the chosen training files will
+        # be #1, #13 (first valid training file), #21 (return to normal gap), #31, etc.
+        # THIS IS PURELY TO KEEP IT CONSISTENT WITH PREVIOUS CODEBASE.
+        # train_universe = self.corpus.drop(index=self.hparams.val_files + self.hparams.test_files)
+        # self.train_files = train_universe.sample(frac=self.hparams.train_frac).index.tolist()
+        # log.info(f'Train fraction - {int(self.hparams.train_frac * 100)}% = {len(self.train_files)} training files')
+        # log.info(f'Train files - {self.train_files}')
+        num_train_files = min(int(round(self.corpus.shape[0] * self.hparams.train_frac)),
+                              self.corpus.shape[0] - len(self.hparams.val_files) - len(self.hparams.test_files))
+        log.info(f'Number of training files: {num_train_files}')
+        # Calculate the step
+        step = int(1.0 / self.hparams.train_frac)
+        self.train_files = self.corpus.index.values[::step]
+        # Find the locations where we have selected a validation or test file
+        locs = np.isin(self.train_files, self.hparams.val_files) | np.isin(self.train_files, self.hparams.test_files)
+        # While we don't have any of these locations, add 1 to the spots where we have chosen them,
+        # and recalculate the locations.
+        while np.any(locs):
+            self.train_files[locs] += 1
+            locs = (np.isin(self.train_files, self.hparams.val_files) |
+                    np.isin(self.train_files, self.hparams.test_files))
+        # Cut it down to however we need...
+        self.train_files = self.train_files[:num_train_files]
+
+
 
         # Download the XML GZ files we need
         log.info('Downloading XML GZ files...')

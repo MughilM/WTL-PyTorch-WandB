@@ -47,7 +47,7 @@ def train(cfg: DictConfig) -> None:
     else:
         wandb_logger = WandbLogger(project=cfg.datamodule.comp_name, save_dir=cfg.paths.log_dir, mode='disabled')
 
-    log.info(f'Instantiating datamodule <{cfg.datamodule._target_}>...')
+    logger.info(f'Instantiating datamodule <{cfg.datamodule._target_}>...')
     datamodule: LightningDataModule = hydra.utils.instantiate(cfg.datamodule)
     datamodule.prepare_data()
 
@@ -72,7 +72,7 @@ def main(cfg: DictConfig) -> None:
 
 
 if __name__ == '__main__':
-    log = logging.getLogger('main')
+    logger = logging.getLogger('main')
     main()
 
 
