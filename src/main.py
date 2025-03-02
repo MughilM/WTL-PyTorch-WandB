@@ -11,6 +11,8 @@ the /config folder. Model training and outputs are performed using PyTorch Light
 and then uploaded to Weights and Biases for automated metric comparisons.
 Metrics include both raw accuracy and thematic fit evaluation task metrics.
 """
+import sys
+
 import pyrootutils
 # Set up the root of the entire projects. This avoids weird import errors when running the program
 root = pyrootutils.setup_root(
@@ -42,10 +44,10 @@ def train(cfg: DictConfig) -> None:
     # Create the data directory in case it's missing
     os.makedirs(cfg.paths.data_dir, exist_ok=True)
 
-    if cfg.get('wandb_enabled'):
-        wandb_logger = WandbLogger(project=cfg.datamodule.comp_name, save_dir=cfg.paths.log_dir)
-    else:
-        wandb_logger = WandbLogger(project=cfg.datamodule.comp_name, save_dir=cfg.paths.log_dir, mode='disabled')
+    # if cfg.get('wandb_enabled'):
+    #     wandb_logger = WandbLogger(project=cfg.datamodule.comp_name, save_dir=cfg.paths.log_dir)
+    # else:
+    #     wandb_logger = WandbLogger(project=cfg.datamodule.comp_name, save_dir=cfg.paths.log_dir, mode='disabled')
 
     logger.info(f'Instantiating datamodule <{cfg.datamodule._target_}>...')
     datamodule: LightningDataModule = hydra.utils.instantiate(cfg.datamodule)

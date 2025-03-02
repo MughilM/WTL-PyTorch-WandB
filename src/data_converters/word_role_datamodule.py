@@ -7,11 +7,14 @@ transforming data for use in PyTorch Lightning. A torch Dataset object is used i
 Preprocessing our data also includes converting from raw XML GZ files to the correct format.
 """
 import os
+from typing import Optional
+
 import numpy as np
 import pandas as pd
 import logging
 from tqdm import tqdm
 import gdown
+import glob
 
 import torch
 import torch.nn as nn
@@ -19,8 +22,9 @@ from torch.utils.data import Dataset, DataLoader
 from pytorch_lightning import LightningDataModule
 from pytorch_lightning.utilities.types import TRAIN_DATALOADERS, EVAL_DATALOADERS
 
-from roles import *
-from convert_data import build_word_vocabulary, convert_files
+from src.data_converters.convert_data import build_word_vocabulary, convert_files
+from src.data_converters.roles import *
+
 
 log = logging.getLogger('main.word_role_datamodule')
 
@@ -36,8 +40,8 @@ class WordRoleDataset(Dataset):
 
 
 class WordRoleDataModule(LightningDataModule):
-    def __init__(self, data_dir, role_set: Roles, corpus_filepath: str, train_frac=0.005, val_files=(1, 2, 3), test_files=(4, 5, 6), num_words=50000,
-                 num_workers=2, batch_size=32, pin_memory=True):
+    def __init__(self, data_dir, role_set: Roles, corpus_filepath: str, train_frac=0.005, val_files=(1, 2, 3),
+                 test_files=(4, 5, 6), num_words=50000, num_workers=2, batch_size=32, pin_memory=True):
         super().__init__()
         self.save_hyperparameters()
         self.xml_gz_dir = os.path.join(data_dir, 'xml_gz')
@@ -49,6 +53,11 @@ class WordRoleDataModule(LightningDataModule):
         self.train_files: list = []
         self.word_vocab: dict = {}
         self.role_vocab: dict = {}
+        # Set the unknown and missing role IDs
+        self.unk_word_id = num_words
+        self.missing_word_id = num_words + 1
+        self.unk_role_id = len(self.hparams.role_set.ROLE_SET)
+        self.missing_role_id = len(self.hparams.role_set.ROLE_SET) + 1
 
     def prepare_data(self) -> None:
         """
@@ -70,8 +79,6 @@ class WordRoleDataModule(LightningDataModule):
         # THIS IS PURELY TO KEEP IT CONSISTENT WITH PREVIOUS CODEBASE.
         # train_universe = self.corpus.drop(index=self.hparams.val_files + self.hparams.test_files)
         # self.train_files = train_universe.sample(frac=self.hparams.train_frac).index.tolist()
-        # log.info(f'Train fraction - {int(self.hparams.train_frac * 100)}% = {len(self.train_files)} training files')
-        # log.info(f'Train files - {self.train_files}')
         num_train_files = min(int(round(self.corpus.shape[0] * self.hparams.train_frac)),
                               self.corpus.shape[0] - len(self.hparams.val_files) - len(self.hparams.test_files))
         log.info(f'Number of training files: {num_train_files}')
@@ -89,8 +96,6 @@ class WordRoleDataModule(LightningDataModule):
         # Cut it down to however we need...
         self.train_files = self.train_files[:num_train_files]
 
-
-
         # Download the XML GZ files we need
         log.info('Downloading XML GZ files...')
         for data_name, fileset in zip(self.dir_names, [self.train_files, self.hparams.val_files, self.hparams.test_files]):
@@ -99,9 +104,13 @@ class WordRoleDataModule(LightningDataModule):
                 filepath = os.path.join(self.xml_gz_dir, data_name, name)
                 if not os.path.exists(filepath):
                     gdown.download(url=url, output=filepath, quiet=True)
+        log.info(f'Train files: {self.train_files}')
 
-        # Build the vocabulary!
-        self.word_vocab = build_word_vocabulary(self.train_files, num_words=self.hparams.num_words)
+        # Build the vocabulary using the files that were just downloaded into
+        # the training directory (use glob for this).
+        self.word_vocab = build_word_vocabulary(glob.glob(os.path.join(self.xml_gz_dir, 'train', '*.xml.gz')), num_words=self.hparams.num_words)
+        self.role_vocab = self.hparams.role_set.ROLE_SET
+        log.info(f'Role Vocabulary\n{self.role_vocab}')
 
     def setup(self, stage=None):
         # The sample duplication is complete, and here we simply create

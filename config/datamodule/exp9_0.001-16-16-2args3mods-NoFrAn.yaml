@@ -1,0 +1,43 @@
+_target_: src.data_converters.word_role_datamodule.WordRoleDataModule
+data_dir: ${paths.data_dir}
+role_set:
+  _target_: src.data_converters.roles.Roles2Args3Mods
+corpus_filepath: ${paths.data_dir}/corpus_files.csv
+train_frac: 0.001
+val_files:
+  - 217
+  - 435
+  - 651
+  - 868
+  - 1085
+  - 1302
+  - 1519
+  - 1736
+  - 1953
+  - 2170
+  - 2387
+  - 2604
+  - 2821
+  - 3038
+  - 3255
+  - 3472
+test_files:
+  - 218
+  - 436
+  - 652
+  - 869
+  - 1086
+  - 1303
+  - 1520
+  - 1737
+  - 1954
+  - 2171
+  - 2388
+  - 2605
+  - 2822
+  - 3039
+  - 3256
+  - 3473
+num_workers: 2
+batch_size: 32
+pin_memory: true

@@ -1,0 +1,10 @@
+defaults:
+  - _self_
+  - datamodule: exp9_0.001-16-16-2args3mods-NoFrAn
+  - paths: default
+  - trainer: default
+  - hydra: default
+  - logger: wandb
+
+seed: 1729
+wandb_enabled: false
